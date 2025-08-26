@@ -3,64 +3,50 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Search } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { useAppAll } from "@/data/AppAllContext";
-import { searchKnowledges } from "@/services/api";
-interface SearchBarProps {
-  onSearch?: (params: SearchParams) => void;
-}
+import { useSearchContext, SearchParams } from "@/contexts/SearchContext";
+import { useNavigate } from "react-router-dom";
 
-export interface SearchParams {
-  technology: string;
-  level: string;
-  keywords: string;
-}
-
-const SearchBar = ({ onSearch }: SearchBarProps) => {
-  const navigate = useNavigate();
+const SearchBar = () => {
   const { technologies, loading } = useAppAll();
+  const { updateSearch } = useSearchContext();
   
-  const [searchParams, setSearchParams] = useState<SearchParams>({
-    technology: "All Technology", 
+  const navigate = useNavigate();
+
+  const [localParams, setLocalParams] = useState<SearchParams>({
+    technology: "All Technology",
     level: "Level",
-    keywords: ""
+    keywords: "",
   });
 
+  const handleSearch = () => {
+    // 1. cập nhật context của search Params
+    updateSearch(localParams);
 
-
-
-  const handleSearch = async () => {
-    try {
-    const data = await searchKnowledges(searchParams);
-    if (onSearch) {
-      onSearch(searchParams); // bạn vẫn giữ onSearch callback nếu cần
-    } else {
-      console.log("Search result:", data); // hoặc navigate sang trang kết quả
-      // navigate("/search-results", { state: { data } });
-    }
-  } catch (err) {
-    console.error("Search failed:", err);
-  }
+    // 2. navigate sang /search với query
+    const searchParams = new URLSearchParams();
+    Object.entries(localParams).forEach(([key, value]) => {
+      if (value) searchParams.set(key, value);
+    });
+    navigate(`/search?${searchParams.toString()}`);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
-    }
+    if (e.key === "Enter") handleSearch();
   };
 
   return (
     <div className="bg-white rounded-xl shadow-kms-search p-6 max-w-4xl mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
         <Select
-          value={searchParams.technology} 
-          onValueChange={(value) => setSearchParams(prev => ({ ...prev, technology: value }))}
+          value={localParams.technology}
+          onValueChange={(value) => setLocalParams((prev) => ({ ...prev, technology: value }))}
         >
           <SelectTrigger className="border-gray-200">
             <SelectValue placeholder="All Technology" />
           </SelectTrigger>
           <SelectContent>
-          <SelectItem value="All Technology">All Technology</SelectItem>
+            <SelectItem value="All Technology">All Technology</SelectItem>
             {!loading &&
               technologies.map((tech) => (
                 <SelectItem key={tech.id} value={tech.name}>
@@ -70,9 +56,9 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
           </SelectContent>
         </Select>
 
-        <Select 
-          value={searchParams.level} 
-          onValueChange={(value) => setSearchParams(prev => ({ ...prev, level: value }))}
+        <Select
+          value={localParams.level}
+          onValueChange={(value) => setLocalParams((prev) => ({ ...prev, level: value }))}
         >
           <SelectTrigger className="border-gray-200">
             <SelectValue placeholder="Level" />
@@ -88,12 +74,12 @@ const SearchBar = ({ onSearch }: SearchBarProps) => {
         <div className="flex space-x-2">
           <Input
             placeholder="Type keywords..."
-            value={searchParams.keywords}
-            onChange={(e) => setSearchParams(prev => ({ ...prev, keywords: e.target.value }))}
+            value={localParams.keywords}
+            onChange={(e) => setLocalParams((prev) => ({ ...prev, keywords: e.target.value }))}
             onKeyPress={handleKeyPress}
             className="flex-1 border-gray-200"
           />
-          <Button 
+          <Button
             onClick={handleSearch}
             className="bg-kms-button hover:opacity-90 transition-all duration-300 px-6"
           >

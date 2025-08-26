@@ -8,19 +8,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { Eye, Heart, MessageCircle } from "lucide-react";
 import { mockTechnologies, mockQuestions, recentSearches } from "@/data/mockData";
 import { useUserInteraction } from "@/contexts/UserInteractionContext";
-import { useSearchKnowledge } from "@/hooks/use-search-knowledge";
-import { useSearchParams } from "react-router-dom";
+
+
 const Index = () => {
-
-  const [searchParams] = useSearchParams();
-  const technology = searchParams.get("technology") || "All Technology";
-  const level = searchParams.get("level") || "Level";
-  const keywords = searchParams.get("keywords") || "";
-
-  const { results: results, loading } = useSearchKnowledge({ technology, level, keywords });
-
-  const navigate = useNavigate();
-
 
   const { toggleFavorite, isFavorited } = useUserInteraction();
   const popularQuestions = mockQuestions.filter(q => q.isPopular);

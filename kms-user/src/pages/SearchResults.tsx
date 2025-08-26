@@ -1,31 +1,23 @@
-import { useSearchParams, Link, useNavigate } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Header from "@/components/layout/Header";
-import SearchBar, { SearchParams } from "@/components/search/SearchBar";
+import SearchBar from "@/components/search/SearchBar";
 import TechTag from "@/components/common/TechTag";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThumbsUp, ThumbsDown, MessageCircle } from "lucide-react";
 import { Knowledge, mockQuestions, recentSearches } from "@/data/mockData";
-import { useSearchKnowledge } from "@/hooks/use-search-knowledge";
 import { useUserInteraction } from "@/contexts/UserInteractionContext";
+import { useSearchContext } from "@/contexts/SearchContext";
+import { useEffect } from "react";
+
 const SearchResults = () => {
   const { isLiked, isDisliked, toggleLike, toggleDislike } = useUserInteraction();
-  const [searchParams] = useSearchParams();
-  const technology = searchParams.get("technology") || "All Technology";
-  const level = searchParams.get("level") || "Level";
-  const keywords = searchParams.get("keywords") || "";
+  const { results, loading, searchParams } = useSearchContext();
 
-  const { results: results, loading } = useSearchKnowledge({ technology, level, keywords });
-
-  const navigate = useNavigate();
-
-  const handleSearch = (params: SearchParams) => {
-    const newSearchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) newSearchParams.set(key, value);
-    });
-    navigate(`/search?${newSearchParams.toString()}`);
-  };
+  // đọc params trực tiếp từ URL
+  const [params] = useSearchParams();
+  const technology = params.get("technology") || "";
+  const level = params.get("level") || "";
 
   return (
     <div className="min-h-screen bg-kms-hero">
@@ -42,8 +34,7 @@ const SearchResults = () => {
               Drive Efficiency and Quality with our Cutting-edge HR KMS
             </p>
           </div>
-
-          <SearchBar onSearch={handleSearch} />
+          <SearchBar />
 
           {/* Recent Searches */}
           <div className="mt-6 text-center">
@@ -93,39 +84,46 @@ const SearchResults = () => {
                         </h3>
                       </Link>
 
-                      <p className="text-gray-600 mb-4 line-clamp-3">{question.content}</p>
+                      <p className="text-gray-600 mb-4 line-clamp-3">
+                        {question.content}
+                      </p>
 
                       <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 text-sm text-gray-500">
-                        <div
-                          className="flex items-center space-x-1 cursor-pointer"
-                          onClick={() => toggleLike(String(question.id))}
-                        >
-                          <ThumbsUp
-                            className={`h-4 w-4 ${isLiked(String(question.id)) ? "text-primary" : "text-gray-500"}`}
-                          />
-                          <span>{question.likes_count || 0}</span>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500">
+                          <div
+                            className="flex items-center space-x-1 cursor-pointer"
+                            onClick={() => toggleLike(String(question.id))}
+                          >
+                            <ThumbsUp
+                              className={`h-4 w-4 ${
+                                isLiked(String(question.id))
+                                  ? "text-primary"
+                                  : "text-gray-500"
+                              }`}
+                            />
+                            <span>{question.likes_count || 0}</span>
+                          </div>
+                          <div
+                            className="flex items-center space-x-1 cursor-pointer"
+                            onClick={() => toggleDislike(String(question.id))}
+                          >
+                            <ThumbsDown
+                              className={`h-4 w-4 ${
+                                isDisliked(String(question.id))
+                                  ? "text-red-500"
+                                  : "text-gray-500"
+                              }`}
+                            />
+                            <span>{question.dislikes_count || 0}</span>
+                          </div>
+                          <Link
+                            to={`/question/${question.id}/comments`}
+                            className="flex items-center space-x-1 hover:text-primary transition-colors"
+                          >
+                            <MessageCircle className="h-4 w-4" />
+                            <span>{question.comments?.length || 0}</span>
+                          </Link>
                         </div>
-
-                        <div
-                          className="flex items-center space-x-1 cursor-pointer"
-                          onClick={() => toggleDislike(String(question.id))}
-                        >
-                          <ThumbsDown
-                            className={`h-4 w-4 ${isDisliked(String(question.id)) ? "text-red-500" : "text-gray-500"}`}
-                          />
-                          <span>{question.dislikes_count || 0}</span>
-                        </div>
-
-                        <Link
-                          to={`/question/${question.id}/comments`}
-                          className="flex items-center space-x-1 hover:text-primary transition-colors"
-                        >
-                          <MessageCircle className="h-4 w-4" />
-                          <span>{question.comments?.length || 0}</span>
-                        </Link>
-                      </div>
-
 
                         <div className="flex items-center space-x-2">
                           <Badge variant="outline" className="text-xs">
@@ -148,8 +146,13 @@ const SearchResults = () => {
               <Card className="shadow-kms-card">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">Most popular questions</h3>
-                    <Link to="/favorites" className="text-sm text-primary hover:underline">
+                    <h3 className="font-semibold text-gray-900">
+                      Most popular questions
+                    </h3>
+                    <Link
+                      to="/favorites"
+                      className="text-sm text-primary hover:underline"
+                    >
                       View all
                     </Link>
                   </div>
@@ -174,8 +177,13 @@ const SearchResults = () => {
               <Card className="shadow-kms-card">
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900">Popular Technology</h3>
-                    <Link to="/top-technologies" className="text-sm text-primary hover:underline">
+                    <h3 className="font-semibold text-gray-900">
+                      Popular Technology
+                    </h3>
+                    <Link
+                      to="/top-technologies"
+                      className="text-sm text-primary hover:underline"
+                    >
                       View all
                     </Link>
                   </div>
@@ -183,7 +191,11 @@ const SearchResults = () => {
                     {["Java", "UX Design", "UI Developer"].map((tech) => (
                       <div key={tech} className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-primary/10 rounded flex items-center justify-center text-primary font-semibold text-sm">
-                          {tech === "Java" ? "☕" : tech === "UX Design" ? "UX" : "💻"}
+                          {tech === "Java"
+                            ? "☕"
+                            : tech === "UX Design"
+                            ? "UX"
+                            : "💻"}
                         </div>
                         <span className="text-gray-700">{tech}</span>
                       </div>
