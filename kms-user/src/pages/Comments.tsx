@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import Header from "@/components/layout/Header";
 import SearchBar from "@/components/search/SearchBar";
@@ -8,20 +8,28 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
-import { ThumbsUp, ArrowLeft, Send, Heart, User } from "lucide-react";
-import { mockQuestions, recentSearches, popularQuestions } from "@/data/mockData";
+import { ArrowLeft, Send, Heart, User } from "lucide-react";
+import { recentSearches, popularQuestions, Knowledge } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { useUserInteraction } from "@/contexts/UserInteractionContext";
+import { getKnowledgeById } from "@/services/api";
 
 const Comments = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { toggleCommentLike, isCommentLiked } = useUserInteraction();
+
   const [newComment, setNewComment] = useState("");
   const [name, setName] = useState("");
-  
-  const question = mockQuestions.find(q => q.id === id);
+  const [question, setQuestion] = useState<Knowledge | null>(null);
+
+  // Fetch question details based on ID
+  useEffect(() => {
+    if (id) {
+      getKnowledgeById(id).then(setQuestion);
+    }
+  }, [id]);
 
   if (!question) {
     return (
@@ -111,18 +119,14 @@ const Comments = () => {
               {/* Question Summary */}
               <Card className="shadow-kms-card">
                 <CardContent className="p-6">
-                  <h2 className="text-xl font-bold text-gray-900 mb-3 flex items-center gap-2">
+                  <h2 className="text-xl font-bold text-gray-900 mb-3">
                     {question.title}
-                    {question.isPopular && (
-                      <Badge className="bg-kms-popular text-white text-xs">Popular</Badge>
-                    )}
                   </h2>
                   <p className="text-gray-600 mb-4 line-clamp-2">
                     {question.content}
                   </p>
                   <div className="flex items-center space-x-3">
                     <Badge variant="outline">{question.technology}</Badge>
-                    <Badge variant="outline">{question.client}</Badge>
                     <Badge variant="outline">{question.level}</Badge>
                   </div>
                 </CardContent>
@@ -132,10 +136,10 @@ const Comments = () => {
               <Card className="shadow-kms-card">
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-6">
-                    Comments ({question.comments.length})
+                    Comments ({question.comments?.length || 0})
                   </h3>
                   
-                  {question.comments.length === 0 ? (
+                  {!question.comments || question.comments.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       <p className="mb-2">No comments yet.</p>
                       <p>Be the first to share your thoughts!</p>
@@ -150,22 +154,19 @@ const Comments = () => {
                                 <User className="h-4 w-4 text-primary" />
                               </div>
                               <div>
-                                <div className="font-medium text-gray-900">{comment.author}</div>
-                                <div className="text-sm text-gray-500">{comment.timestamp}</div>
+                                <div className="font-medium text-gray-900">User {comment.user_id}</div>
+                                <div className="text-sm text-gray-500">
+                                  {new Date(comment.created_at).toLocaleString()}
+                                </div>
                               </div>
                             </div>
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              onClick={() => toggleCommentLike(comment.id)}
-                              className={`${
-                                isCommentLiked(comment.id) 
-                                  ? 'text-blue-600 hover:text-blue-700' 
-                                  : 'text-gray-400 hover:text-blue-600'
-                              } transition-colors`}
+
                             >
-                              <Heart className={`h-4 w-4 mr-1 ${isCommentLiked(comment.id) ? 'fill-current' : ''}`} />
-                              {comment.likes + (isCommentLiked(comment.id) ? 1 : 0)}
+                              {/* <Heart className={`h-4 w-4 mr-1 ${isCommentLiked(comment.id) ? 'fill-current' : ''}`} />
+                              TODO: thay thế bằng likes_count nếu API có */}
                             </Button>
                           </div>
                           <p className="text-gray-700 leading-relaxed">{comment.content}</p>

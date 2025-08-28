@@ -16,6 +16,7 @@ import CreateKnowledge from "./pages/CreateKnowledge";
 import NotFound from "./pages/NotFound";
 import { AppAllProvider } from "./data/AppAllContext";
 import { SearchProvider } from "./contexts/SearchContext";
+import { FloatingChat } from "./components/ui/floating-chat";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -40,6 +41,7 @@ const App = () => (
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              <FloatingChat />
             </BrowserRouter>
           </UserInteractionProvider>
         </TooltipProvider>

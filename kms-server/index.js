@@ -5,7 +5,7 @@ const { query } = require('./db');
 const authRoutes = require('./routes/authRoutes');
 const knowledgeRoutes = require('./routes/knowledgeRoutes');
 const techRoutes = require("./routes/techRoutes");
-
+const aiRoutes = require("./routes/aiRoutes");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -26,6 +26,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/technology', techRoutes);
+app.use('/api/ai', aiRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

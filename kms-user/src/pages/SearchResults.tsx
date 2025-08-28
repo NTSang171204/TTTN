@@ -12,12 +12,13 @@ import { useEffect } from "react";
 
 const SearchResults = () => {
   const { isLiked, isDisliked, toggleLike, toggleDislike } = useUserInteraction();
-  const { results, loading, searchParams } = useSearchContext();
-
+  const { results, loading } = useSearchContext();
+ 
   // đọc params trực tiếp từ URL
   const [params] = useSearchParams();
   const technology = params.get("technology") || "";
   const level = params.get("level") || "";
+  
 
   return (
     <div className="min-h-screen bg-kms-hero">

@@ -67,4 +67,15 @@ export const searchKnowledges = async (params: {
   }
 }
 
+//Fetch knowledge by ID
+export const getKnowledgeById = async (id: string) => {
+  try {
+    const res = await API.get(`/knowledge/${id}`);
+    return res.data;
+  } catch (error) {
+    console.error("Error fetching knowledge by ID:", error);
+    throw error;
+  }
+}
+
 export default API;

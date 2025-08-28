@@ -47,7 +47,20 @@ const getKnowledgeById = async (req, res) => {
     try {
         const { id } = req.params;
         const result = await pool.query(
-            `SELECT * FROM knowledge WHERE id = $1`,
+            `SELECT k.id, k.title, k.content, k.tags, k.technology, k.level, k.likes_count, k.dislikes_count, COUNT (c.id) AS comment_count,
+                json_agg(
+                    json_build_object(
+                        'id', c.id,
+                        'content', c.content,
+                        'user_id', c.user_id,
+                        'parent_id', c.parent_id,
+                        'created_at', c.created_at
+                    )
+                ) FILTER (WHERE c.id IS NOT NULL) AS comments
+                FROM knowledge k
+                LEFT JOIN comments c on k.id = c.knowledge_id
+                WHERE k.id = $1
+                GROUP BY k.id, k.title, k.content, k.tags, k.technology, k.level, k.likes_count, k.dislikes_count`,
             [id]
         );
         if (result.rows.length === 0) {
