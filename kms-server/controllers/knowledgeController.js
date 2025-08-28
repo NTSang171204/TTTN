@@ -30,17 +30,38 @@ const createKnowledge = async (req, res) => {
   
   
 
-// Get all knowledge
+// // Get all knowledge
+// const getAllKnowledge = async (req, res) => {
+//     try {
+//         const result = await pool.query(
+//             `SELECT * FROM knowledge WHERE ORDER BY created_at DESC`
+//         );
+//         res.json(result.rows);
+//     } catch (error) {
+//         res.status(500).json({ error:  `Internal server error on getting all the knowledge blogs: ${error.message}`})
+//     }
+// };
+
+// controllers/knowledgeController.js
 const getAllKnowledge = async (req, res) => {
     try {
-        const result = await pool.query(
-            `SELECT * FROM knowledge ORDER BY created_at DESC`
-        );
-        res.json(result.rows);
+      const result = await pool.query(
+        `SELECT k.id, k.title, k.content, k.technology, k.level, k.status, k.created_at, k.view_count,
+                u.username AS author
+         FROM knowledge k
+         JOIN users u ON k.author_id = u.id
+         ORDER BY k.created_at DESC`
+      );
+      res.json(result.rows);
     } catch (error) {
-        res.status(500).json({ error:  `Internal server error on getting all the knowledge blogs: ${error.message}`})
+      res.status(500).json({ 
+        error: `Internal server error on getting all knowledge: ${error.message}`
+      });
     }
-};
+  };
+  
+
+
 
 // Get Knowledge by ID
 const getKnowledgeById = async (req, res) => {
@@ -59,7 +80,7 @@ const getKnowledgeById = async (req, res) => {
                 ) FILTER (WHERE c.id IS NOT NULL) AS comments
                 FROM knowledge k
                 LEFT JOIN comments c on k.id = c.knowledge_id
-                WHERE k.id = $1
+                WHERE k.id = $1 and k.status = 'published'
                 GROUP BY k.id, k.title, k.content, k.tags, k.technology, k.level, k.likes_count, k.dislikes_count`,
             [id]
         );
@@ -150,7 +171,7 @@ const searchKnowledge = async (req, res) => {
                    ) FILTER (WHERE c.id IS NOT NULL) AS comments
             FROM knowledge k
             LEFT JOIN comments c ON k.id = c.knowledge_id
-            WHERE 1=1
+            WHERE 1=1 AND k.status = 'Approved'
         `;
 
         const values = [];
@@ -197,6 +218,36 @@ const fetchAllTechs = async (req, res) => {
     }
 };
 
+//update knowledge on admin console controller:
+// controllers/knowledgeController.js
+const updateKnowledgeStatus = async (req, res) => {
+    try {
+      const { id } = req.params; // knowledge id
+      const { status } = req.body;
+  
+      if (!["Approved", "Rejected", "Pending"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+  
+      const result = await pool.query(
+        `UPDATE knowledge
+         SET status = $1
+         WHERE id = $2
+         RETURNING id, title, status`,
+        [status, id]
+      );
+  
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "Knowledge not found" });
+      }
+  
+      res.json({ success: true, knowledge: result.rows[0] });
+    } catch (error) {
+      res.status(500).json({ error: `Internal server error: ${error.message}` });
+    }
+  };
+  
+
 
 // Exporting all the functions
 module.exports = {
@@ -206,5 +257,6 @@ module.exports = {
     updateKnowledge,
     deleteKnowledge,
     searchKnowledge,
-    fetchAllTechs
+    fetchAllTechs,
+    updateKnowledgeStatus
 };

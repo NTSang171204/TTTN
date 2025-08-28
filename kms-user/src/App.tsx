@@ -17,6 +17,7 @@ import NotFound from "./pages/NotFound";
 import { AppAllProvider } from "./data/AppAllContext";
 import { SearchProvider } from "./contexts/SearchContext";
 import { FloatingChat } from "./components/ui/floating-chat";
+import ProtectedRoute from "./components/routes/ProtectedRoute";
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -29,7 +30,7 @@ const App = () => (
             <Sonner />
             <BrowserRouter>
               <Routes>
-                <Route path="/" element={<Index />} />
+                <Route path="/" element={ <ProtectedRoute> <Index /></ProtectedRoute> } />
                 <Route path="/search" element={<SearchResults />} />
                 <Route path="/question/:id" element={<QuestionDetail />} />
                 <Route path="/question/:id/comments" element={<Comments />} />

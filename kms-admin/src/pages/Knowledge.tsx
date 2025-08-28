@@ -1,114 +1,88 @@
-import { useState } from "react";
-import { CheckCircle, XCircle, Eye, Search, Filter, Clock, User } from "lucide-react";
+
+import { useState, useEffect, useCallback } from "react";
+import { CheckCircle, XCircle, Eye, Search, Clock, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
+import type { Knowledge } from "@/data/adminData";
 
-// Mock knowledge articles data
-const initialArticles = [
-  {
-    id: 1,
-    title: "How to Set Up Authentication",
-    author: "John Doe",
-    category: "Security",
-    status: "Pending",
-    createdAt: "2024-01-15",
-    views: 245,
-    excerpt: "A comprehensive guide on setting up secure authentication in your application..."
-  },
-  {
-    id: 2,
-    title: "Database Optimization Best Practices",
-    author: "Sarah Johnson",
-    category: "Database",
-    status: "Approved",
-    createdAt: "2024-01-14",
-    views: 892,
-    excerpt: "Learn the essential techniques for optimizing database performance and queries..."
-  },
-  {
-    id: 3,
-    title: "API Rate Limiting Implementation",
-    author: "Mike Chen",
-    category: "API",
-    status: "Rejected",
-    createdAt: "2024-01-13",
-    views: 156,
-    excerpt: "Implement effective rate limiting to protect your APIs from abuse and overload..."
-  },
-  {
-    id: 4,
-    title: "Frontend Performance Optimization",
-    author: "Emily Davis",
-    category: "Frontend",
-    status: "Pending",
-    createdAt: "2024-01-12",
-    views: 423,
-    excerpt: "Techniques and strategies to improve your frontend application performance..."
-  },
-  {
-    id: 5,
-    title: "Docker Container Best Practices",
-    author: "Alex Brown",
-    category: "DevOps",
-    status: "Approved",
-    createdAt: "2024-01-11",
-    views: 671,
-    excerpt: "Essential practices for building efficient and secure Docker containers..."
-  }
-];
-
-export default function Knowledge() {
-  const [articles, setArticles] = useState(initialArticles);
+export default function AdminKnowledge() {
+  const [articles, setArticles] = useState<Knowledge[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const { toast } = useToast();
 
+  // Fetch articles
+  const fetchArticles = useCallback(async () => {
+    try {
+      const { data } = await axios.get("http://localhost:3000/api/knowledge");
+      setArticles(data);
+    } catch (error) {
+      console.error("Error fetching knowledge:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch knowledge articles",
+        variant: "destructive",
+      });
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchArticles();
+  }, [fetchArticles]);
+
+  // Update status
+  const handleUpdateStatus = async (id: number, status: string) => {
+    try {
+      const { data } = await axios.patch(`http://localhost:3000/api/knowledge/${id}/status`, { status });
+      setArticles(prev =>
+        prev.map(article =>
+          article.id === id ? { ...article, status: data.knowledge.status } : article
+        )
+      );
+      toast({
+        title: `Article ${status}`,
+        description: `The knowledge article has been ${status.toLowerCase()} successfully.`,
+      });
+    } catch (error) {
+      console.error("Error updating status:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update article status.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Filtered list
   const filteredArticles = articles.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         article.category.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "All" || article.status === statusFilter;
+    const status = article.status ?? "Pending";
+    const matchesSearch =
+      article.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.author.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      article.technology.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (article.level?.toLowerCase().includes(searchTerm.toLowerCase()) ?? false);
+
+    const matchesStatus = statusFilter === "All" || status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
-  const handleApprove = (articleId: number) => {
-    setArticles(prev => 
-      prev.map(article => 
-        article.id === articleId ? { ...article, status: "Approved" } : article
-      )
-    );
-    toast({
-      title: "Article approved",
-      description: "The knowledge article has been approved successfully.",
-    });
-  };
-
-  const handleReject = (articleId: number) => {
-    setArticles(prev => 
-      prev.map(article => 
-        article.id === articleId ? { ...article, status: "Rejected" } : article
-      )
-    );
-    toast({
-      title: "Article rejected",
-      description: "The knowledge article has been rejected.",
-    });
-  };
-
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
+    const s = status ?? "Pending";
     const variants = {
       Approved: "bg-success/10 text-success border-success/20",
       Rejected: "bg-destructive/10 text-destructive border-destructive/20",
       Pending: "bg-warning/10 text-warning border-warning/20"
     };
-    return variants[status as keyof typeof variants] || variants.Pending;
+    return variants[s as keyof typeof variants];
   };
 
   const statusCounts = articles.reduce((acc, article) => {
-    acc[article.status] = (acc[article.status] || 0) + 1;
+    const s = article.status ?? "Pending";
+    acc[s] = (acc[s] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);
 
@@ -124,6 +98,7 @@ export default function Knowledge() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Total / Pending / Approved / Rejected cards */}
         <Card className="admin-card">
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -214,60 +189,39 @@ export default function Knowledge() {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div className="flex-1">
-                  <CardTitle className="text-lg font-semibold text-foreground mb-1">
-                    {article.title}
-                  </CardTitle>
-                  <CardDescription className="text-muted-foreground">
-                    {article.excerpt}
-                  </CardDescription>
+                  <CardTitle className="text-lg font-semibold text-foreground mb-1">{article.title}</CardTitle>
+                  <CardDescription className="text-muted-foreground">{article.content}</CardDescription>
                 </div>
                 <Badge variant="outline" className={getStatusBadge(article.status)}>
-                  {article.status}
+                  {article.status ?? "Pending"}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-6 text-sm text-muted-foreground">
+                  <div className="flex items-center space-x-1"><User className="h-4 w-4" /><span>{article.author}</span></div>
                   <div className="flex items-center space-x-1">
-                    <User className="h-4 w-4" />
-                    <span>{article.author}</span>
+                    <span>Category: {article.technology}</span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <span>Category: {article.category}</span>
+                    <span>Level: {article.level}</span>
                   </div>
                   <div className="flex items-center space-x-1">
-                    <Eye className="h-4 w-4" />
-                    <span>{article.views} views</span>
+                    <Eye className="h-4 w-4" /><span>{article.view_count} views</span>
                   </div>
-                  <span>{article.createdAt}</span>
+                  <span>{new Date(article.created_at).toLocaleDateString()}</span>
                 </div>
-                <div className="flex items-center space-x-2">
-                  <Button variant="outline" size="sm" className="admin-button-secondary">
-                    <Eye className="h-4 w-4 mr-1" />
-                    View Details
-                  </Button>
-                  {article.status === "Pending" && (
-                    <>
-                      <Button
-                        size="sm"
-                        onClick={() => handleApprove(article.id)}
-                        className="bg-success hover:bg-success/90 text-success-foreground"
-                      >
-                        <CheckCircle className="h-4 w-4 mr-1" />
-                        Approve
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleReject(article.id)}
-                      >
-                        <XCircle className="h-4 w-4 mr-1" />
-                        Reject
-                      </Button>
-                    </>
-                  )}
-                </div>
+                {article.status === null || article.status === "Pending" ? (
+                  <div className="flex gap-2">
+                    <Button size="sm" className="bg-success text-white" onClick={() => handleUpdateStatus(article.id, "Approved")}>
+                      <CheckCircle className="h-4 w-4 mr-1" /> Approve
+                    </Button>
+                    <Button variant="destructive" size="sm" onClick={() => handleUpdateStatus(article.id, "Rejected")}>
+                      <XCircle className="h-4 w-4 mr-1" /> Reject
+                    </Button>
+                  </div>
+                ) : null}
               </div>
             </CardContent>
           </Card>

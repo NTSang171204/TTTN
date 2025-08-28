@@ -10,7 +10,8 @@ const {
   getKnowledgeById,
   updateKnowledge,
   deleteKnowledge,
-  searchKnowledge
+  searchKnowledge,
+  updateKnowledgeStatus
 } = require('../controllers/knowledgeController');
 
 const { authMiddleware } = require('../middlewares/authMiddleware');
@@ -22,4 +23,5 @@ router.get('/search', searchKnowledge); // Search knowledge by title or tags
 router.delete('/:id', authMiddleware, deleteKnowledge); // Delete knowledge by ID
 router.put('/:id', authMiddleware, updateKnowledge); // Update knowledge by ID
 router.get('/:id', getKnowledgeById); // Get knowledge by ID
+router.patch('/:id/status', updateKnowledgeStatus);
 module.exports = router;
