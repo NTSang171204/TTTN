@@ -97,8 +97,3 @@ npm run dev
 * Đảm bảo PostgreSQL đang chạy và thông tin `.env` khớp với cấu hình DB.
 
 ```
-
----
-
-Bạn có muốn mình viết thêm **sơ đồ cấu trúc thư mục** (`kms-server`, `kms-admin`, `kms-users`) vào README để người khác dễ hình dung dự án không?
-```
