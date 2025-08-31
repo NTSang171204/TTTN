@@ -135,4 +135,146 @@ async function logout(req, res) {
     }
 }
 
-module.exports = { register, login, me, logout};
+// Fetch all users
+const getAllUsers = async (req, res) => {
+  try {
+    const result = await query(`SELECT id, username, email, role, created_at FROM users ORDER BY created_at DESC`);
+    res.json(result.rows);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: `Internal server error on fetching users: ${error.message}` });
+  }
+};
+
+// Xóa user theo id
+const deleteUser = async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+  
+      const result = await query(
+        "DELETE FROM users WHERE id = $1 RETURNING *",
+        [id]
+      );
+  
+      if (result.rowCount === 0) {
+        return res.status(404).json({ error: "User not found" });
+      }
+  
+      res.json({
+        message: "User deleted successfully",
+        user: result.rows[0],
+      });
+    } catch (err) {
+      console.error("Error deleting user:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
+  
+// ==================== Register Admin ====================
+async function registerAdmin(req, res) {
+    try {
+      const { username, email, password, role } = req.body;
+      if (!username || !email || !password) {
+        return res
+          .status(400)
+          .json({ error: "username, email, password are required" });
+      }
+      if (!isValidEmail(email)) {
+        return res.status(400).json({ error: "Email is invalid" });
+      }
+  
+      // check username/email tồn tại
+      const exists = await query(
+        "SELECT 1 FROM admins WHERE username = $1 OR email = $2 LIMIT 1",
+        [username, email]
+      );
+      if (exists.rowCount > 0) {
+        return res
+          .status(409)
+          .json({ error: "Username or email already exists" });
+      }
+  
+      // hash password
+      const password_hash = await bcrypt.hash(password, hash_salt);
+  
+      // insert vào bảng admins
+      const result = await query(
+        `INSERT INTO admins (username, email, password, role)
+           VALUES ($1, $2, $3, $4)
+           RETURNING id, username, email, role, created_at`,
+        [username, email, password_hash, role || "ADMIN"]
+      );
+  
+      return res.status(201).json({
+        message: "Admin registered successfully",
+        admin: result.rows[0],
+      });
+    } catch (error) {
+      if (error && error.code === "23505") {
+        return res
+          .status(409)
+          .json({ error: "Username or email already exists" });
+      }
+      console.error(error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+  
+  // ==================== Login Admin ====================
+  async function loginAdmin(req, res) {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res
+          .status(400)
+          .json({ error: "Email and Password are required" });
+      }
+  
+      const found = await query(
+        `SELECT id, username, email, role, password
+           FROM admins
+           WHERE email = $1
+           LIMIT 1`,
+        [email]
+      );
+  
+      if (found.rowCount === 0) {
+        return res
+          .status(401)
+          .json({ success: false, error: "Invalid email or password" });
+      }
+  
+      const admin = found.rows[0];
+  
+      const ok = await bcrypt.compare(password, admin.password);
+      if (!ok) {
+        return res
+          .status(401)
+          .json({ success: false, error: "Invalid email or password" });
+      }
+  
+      const token = jwt.sign(
+        { id: admin.id, username: admin.username, role: admin.role },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES }
+      );
+  
+      return res.json({
+        success: true,
+        message: "Login Successfully",
+        token,
+        admin: {
+          id: admin.id,
+          username: admin.username,
+          email: admin.email,
+          role: admin.role,
+        },
+      });
+    } catch (error) {
+      console.error("Admin Login error: ", error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  }
+  
+
+module.exports = { register, login, me, logout, getAllUsers, deleteUser, registerAdmin, loginAdmin};

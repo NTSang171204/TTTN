@@ -168,7 +168,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-8">
         <div className="max-w-7xl mx-auto px-6 text-center">
-          <p className="text-gray-400">© All rights reserved. innova solutions @ 2023</p>
+          <p className="text-gray-400">© All rights reserved. innova solutions @ 2025</p>
         </div>
       </footer>
     </div>

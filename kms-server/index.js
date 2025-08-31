@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const { query } = require('./db');
+const path = require('path');
 const authRoutes = require('./routes/authRoutes');
 const knowledgeRoutes = require('./routes/knowledgeRoutes');
 const techRoutes = require("./routes/techRoutes");
@@ -20,6 +21,8 @@ app.use(cors({
 
 //middlewares
 app.use(express.json());
+// cho phép truy cập ảnh tĩnh
+app.use("/images", express.static(path.join(__dirname, "images")));
 
 
 //routes
@@ -27,6 +30,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/knowledge', knowledgeRoutes);
 app.use('/api/technology', techRoutes);
 app.use('/api/ai', aiRoutes);
+
+
+
+// app.use("/api/knowledge", commentRoutes);
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);

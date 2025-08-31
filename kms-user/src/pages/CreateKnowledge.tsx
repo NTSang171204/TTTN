@@ -96,7 +96,7 @@ const CreateKnowledge = () => {
                 {/* Technology Selection */}
                 <div className="space-y-2">
                   <Label htmlFor="technology" className="text-foreground font-medium">
-                    Technology *
+                    Technology 
                   </Label>
                   <Select onValueChange={(value) => handleInputChange("technology", value)}>
                     <SelectTrigger className="w-full">

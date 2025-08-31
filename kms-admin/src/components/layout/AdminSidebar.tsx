@@ -5,7 +5,8 @@ import {
   BookOpen, 
   Settings,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Code
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -14,6 +15,7 @@ const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Users', href: '/users', icon: Users },
   { name: 'Knowledge', href: '/knowledge', icon: BookOpen },
+  { name: 'Technology', href: '/technology', icon: Code },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 

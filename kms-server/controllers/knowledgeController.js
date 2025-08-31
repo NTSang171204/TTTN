@@ -80,7 +80,7 @@ const getKnowledgeById = async (req, res) => {
                 ) FILTER (WHERE c.id IS NOT NULL) AS comments
                 FROM knowledge k
                 LEFT JOIN comments c on k.id = c.knowledge_id
-                WHERE k.id = $1 and k.status = 'published'
+                WHERE k.id = $1 and k.status = 'Approved'
                 GROUP BY k.id, k.title, k.content, k.tags, k.technology, k.level, k.likes_count, k.dislikes_count`,
             [id]
         );
@@ -210,13 +210,34 @@ const searchKnowledge = async (req, res) => {
 //Fetch all techs
 const fetchAllTechs = async (req, res) => {
     try {
-        const result = await pool.query(`SELECT id, name from technology ORDER BY name ASC`);
+        const result = await pool.query(`SELECT id, name, icon from technology ORDER BY id ASC`);
         res.json(result.rows);
     } catch (error) {
         console.error("Error fetching technologies:", error);
         res.status(500).json({ error: `Internal server error on fetching technologies: ${error.message}` });
     }
 };
+
+//Fetch techs + question_count:
+const fetchTechsWithStats = async (req, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT t.id, t.name,
+               COUNT(k.id) AS question_count
+        FROM technology t
+        LEFT JOIN knowledge k ON k.technology = t.name
+        GROUP BY t.id, t.name
+        ORDER BY t.name ASC
+      `);
+      res.json(result.rows);
+    } catch (error) {
+      console.error("Error fetching technologies with stats:", error);
+      res.status(500).json({
+        error: `Internal server error on fetching technologies with stats: ${error.message}`,
+      });
+    }
+  };
+  
 
 //update knowledge on admin console controller:
 // controllers/knowledgeController.js
@@ -248,6 +269,43 @@ const updateKnowledgeStatus = async (req, res) => {
   };
   
 
+//Add a comment to knowledge:
+
+const createComment = async (req, res) => {
+    try {
+      const { id } = req.params; // knowledge_id
+      const { content, parent_id } = req.body;
+      const userId = req.user.id; // từ middleware JWT
+  
+      if (!content || !content.trim()) {
+        return res.status(400).json({ error: "Comment content is required" });
+      }
+  
+      const result = await pool.query(
+        `INSERT INTO comments (knowledge_id, user_id, content, parent_id, created_at)
+         VALUES ($1, $2, $3, $4, NOW())
+         RETURNING id, knowledge_id, user_id, content, parent_id, created_at`,
+        [id, userId, content, parent_id || null]
+      );
+  
+      // Sau khi insert, JOIN sang users để lấy username
+      const commentId = result.rows[0].id;
+      const joined = await pool.query(
+        `SELECT c.id, c.knowledge_id, c.user_id, u.username, 
+                c.content, c.parent_id, c.created_at
+         FROM comments c
+         JOIN users u ON c.user_id = u.id
+         WHERE c.id = $1`,
+        [commentId]
+      );
+  
+      res.status(201).json(joined.rows[0]);
+    } catch (err) {
+      console.error("Error creating comment:", err);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  };
+  
 
 // Exporting all the functions
 module.exports = {
@@ -258,5 +316,7 @@ module.exports = {
     deleteKnowledge,
     searchKnowledge,
     fetchAllTechs,
-    updateKnowledgeStatus
+    fetchTechsWithStats,
+    updateKnowledgeStatus,
+    createComment
 };

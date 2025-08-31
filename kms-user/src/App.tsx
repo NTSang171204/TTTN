@@ -29,19 +29,26 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={ <ProtectedRoute> <Index /></ProtectedRoute> } />
-                <Route path="/search" element={<SearchResults />} />
-                <Route path="/question/:id" element={<QuestionDetail />} />
-                <Route path="/question/:id/comments" element={<Comments />} />
-                <Route path="/top-technologies" element={<TopTechnologies />} />
-                <Route path="/favorites" element={<Favorites />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-                <Route path="/create-knowledge" element={<CreateKnowledge />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+            <Routes>
+            {/* Nhóm route được bảo vệ */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/favorites" element={<Favorites />} />
+              <Route path="/create-knowledge" element={<CreateKnowledge />} />
+            </Route>
+
+            {/* Các route public */}
+            <Route path="/search" element={<SearchResults />} />
+            <Route path="/question/:id" element={<QuestionDetail />} />
+            <Route path="/question/:id/comments" element={<Comments />} />
+            <Route path="/top-technologies" element={<TopTechnologies />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+
               <FloatingChat />
             </BrowserRouter>
           </UserInteractionProvider>

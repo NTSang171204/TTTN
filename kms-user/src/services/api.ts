@@ -78,7 +78,19 @@ export const getKnowledgeById = async (id: string) => {
   }
 }
 
+//Post a comment:
+export async function postComment(knowledgeId: string, content: string) {
+  const token = localStorage.getItem("token");
+  if (!token) throw new Error("Not authenticated");
 
-//loginlogin
+  const res = await API.post(
+    `/knowledge/${knowledgeId}/comments`,
+    { content },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  console.log(res.data);
+  return res.data;
+}
+
 
 export default API;

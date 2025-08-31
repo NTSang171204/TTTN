@@ -29,6 +29,7 @@ export interface Knowledge {
     user_id: number;
     parent_id: number | null;
     created_at: string;
+    username: string;
   }[];
 
 }

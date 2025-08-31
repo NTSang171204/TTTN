@@ -11,7 +11,8 @@ const {
   updateKnowledge,
   deleteKnowledge,
   searchKnowledge,
-  updateKnowledgeStatus
+  updateKnowledgeStatus,
+  createComment
 } = require('../controllers/knowledgeController');
 
 const { authMiddleware } = require('../middlewares/authMiddleware');
@@ -24,4 +25,6 @@ router.delete('/:id', authMiddleware, deleteKnowledge); // Delete knowledge by I
 router.put('/:id', authMiddleware, updateKnowledge); // Update knowledge by ID
 router.get('/:id', getKnowledgeById); // Get knowledge by ID
 router.patch('/:id/status', updateKnowledgeStatus);
+router.post("/:id/comments", authMiddleware, createComment);
+
 module.exports = router;

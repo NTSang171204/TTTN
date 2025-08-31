@@ -13,7 +13,7 @@ import { recentSearches, popularQuestions, Knowledge } from "@/data/mockData";
 import { useToast } from "@/hooks/use-toast";
 import { useUserInteraction } from "@/contexts/UserInteractionContext";
 import { getKnowledgeById } from "@/services/api";
-
+import { postComment } from "@/services/api";
 const Comments = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -23,6 +23,8 @@ const Comments = () => {
   const [newComment, setNewComment] = useState("");
   const [name, setName] = useState("");
   const [question, setQuestion] = useState<Knowledge | null>(null);
+
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
 
   // Fetch question details based on ID
   useEffect(() => {
@@ -44,23 +46,37 @@ const Comments = () => {
     );
   }
 
-  const handleSubmitComment = () => {
-    if (!newComment.trim() || !name.trim()) {
+  const handleSubmitComment = async () => {
+    if (!newComment.trim()) {
       toast({
         title: "Missing Information",
-        description: "Please enter both your name and comment",
+        description: "Please enter a comment",
         variant: "destructive"
       });
       return;
     }
-
-    toast({
-      title: "Comment Added",
-      description: "Your comment has been successfully posted",
-    });
-    
-    setNewComment("");
-    setName("");
+  
+    try {
+      const comment = await postComment(id!, newComment);
+  
+      setQuestion((prev) =>
+        prev
+          ? { ...prev, comments: [...(prev.comments || []), comment] }
+          : prev
+      );
+  
+      setNewComment("");
+      toast({
+        title: "Comment Added",
+        description: "Your comment has been successfully posted",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: err.message || "Failed to post comment",
+        variant: "destructive"
+      });
+    }
   };
 
   return (
@@ -154,7 +170,7 @@ const Comments = () => {
                                 <User className="h-4 w-4 text-primary" />
                               </div>
                               <div>
-                                <div className="font-medium text-gray-900">User {comment.user_id}</div>
+                                <div className="font-medium text-gray-900">User {comment.user_id} - {comment.username}</div>
                                 <div className="text-sm text-gray-500">
                                   {new Date(comment.created_at).toLocaleString()}
                                 </div>
@@ -190,8 +206,8 @@ const Comments = () => {
                       <Input
                         id="name"
                         placeholder="Enter your name"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
+                        value={user.username || "Guest"}
+                        disabled
                         className="w-full"
                       />
                     </div>
@@ -273,6 +289,8 @@ const Comments = () => {
           </div>
         </div>
       </div>
+      
+
     </div>
   );
 };

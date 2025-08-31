@@ -1,65 +1,49 @@
 import { Users, BookOpen, Code, TrendingUp, Clock, CheckCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-
-const statsCards = [
-  {
-    title: "Total Users",
-    value: "2,543",
-    change: "+12%",
-    changeType: "positive" as const,
-    icon: Users,
-    description: "Active users this month"
-  },
-  {
-    title: "Total Knowledge",
-    value: "1,247",
-    change: "+8%",
-    changeType: "positive" as const,
-    icon: BookOpen,
-    description: "Knowledge articles"
-  },
-  {
-    title: "Total Technologies",
-    value: "89",
-    change: "+3%",
-    changeType: "positive" as const,
-    icon: Code,
-    description: "Integrated technologies"
-  }
-];
+import { useAdmin } from "@/data/AdminContext";
 
 const recentActivity = [
-  {
-    id: 1,
-    action: "New user registered",
-    user: "Sarah Johnson",
-    timestamp: "2 minutes ago",
-    type: "user"
-  },
-  {
-    id: 2,
-    action: "Knowledge article approved",
-    user: "Mike Chen",
-    timestamp: "1 hour ago",
-    type: "knowledge"
-  },
-  {
-    id: 3,
-    action: "System update completed",
-    user: "System",
-    timestamp: "3 hours ago",
-    type: "system"
-  },
-  {
-    id: 4,
-    action: "User permissions updated",
-    user: "Alex Brown",
-    timestamp: "5 hours ago",
-    type: "user"
-  }
+  { id: 1, action: "New user registered", user: "Sarah Johnson", timestamp: "2 minutes ago", type: "user" },
+  { id: 2, action: "Knowledge article approved", user: "Mike Chen", timestamp: "1 hour ago", type: "knowledge" },
+  { id: 3, action: "System update completed", user: "System", timestamp: "3 hours ago", type: "system" },
+  { id: 4, action: "User permissions updated", user: "Alex Brown", timestamp: "5 hours ago", type: "user" }
 ];
 
 export default function Dashboard() {
+  const { totalUsers, totalKnowledges, totalTechs, loading } = useAdmin(); 
+
+  // Nếu còn loading thì hiển thị skeleton/đang tải
+  if (loading) {
+    return <div className="p-6">Loading dashboard...</div>;
+  }
+
+  const statsCards = [
+    {
+      title: "Total Users",
+      value: totalUsers.toString(), // 👈 số thật
+      change: "+12%",
+      changeType: "positive" as const,
+      icon: Users,
+      description: "Active users this month"
+    },
+    {
+      title: "Total Knowledge",
+      value: totalKnowledges.toString(),
+      change: "+8%",
+      changeType: "positive" as const,
+      icon: BookOpen,
+      description: "Knowledge articles"
+    },
+    {
+      title: "Total Technologies",
+      value: totalTechs.toString(),
+      change: "+3%",
+      changeType: "positive" as const,
+      icon: Code,
+      description: "Integrated technologies"
+    }
+  ];
+
   return (
     <div className="min-h-full space-y-6 pb-8">
       {/* Page Header */}
@@ -112,7 +96,10 @@ export default function Dashboard() {
           <CardContent>
             <div className="space-y-4">
               {recentActivity.map((activity) => (
-                <div key={activity.id} className="flex items-start space-x-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors">
+                <div
+                  key={activity.id}
+                  className="flex items-start space-x-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors"
+                >
                   <div className="p-1 rounded-full bg-primary/10">
                     <CheckCircle className="h-3 w-3 text-primary" />
                   </div>
@@ -131,9 +118,7 @@ export default function Dashboard() {
         <Card className="admin-card">
           <CardHeader>
             <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>
-              Frequently used admin actions
-            </CardDescription>
+            <CardDescription>Frequently used admin actions</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-4">

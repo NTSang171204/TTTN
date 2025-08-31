@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { Trash2, UserPlus, Search, Filter, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -21,63 +22,53 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-// Mock user data
-const initialUsers = [
-  {
-    id: 1,
-    name: "John Doe",
-    email: "john@example.com",
-    role: "Admin",
-    status: "Active",
-    lastLogin: "2024-01-15",
-    avatar: "JD"
-  },
-  {
-    id: 2,
-    name: "Sarah Johnson",
-    email: "sarah@example.com",
-    role: "Editor",
-    status: "Active",
-    lastLogin: "2024-01-14",
-    avatar: "SJ"
-  },
-  {
-    id: 3,
-    name: "Mike Chen",
-    email: "mike@example.com",
-    role: "User",
-    status: "Inactive",
-    lastLogin: "2024-01-10",
-    avatar: "MC"
-  },
-  {
-    id: 4,
-    name: "Emily Davis",
-    email: "emily@example.com",
-    role: "Editor",
-    status: "Active",
-    lastLogin: "2024-01-15",
-    avatar: "ED"
-  },
-  {
-    id: 5,
-    name: "Alex Brown",
-    email: "alex@example.com",
-    role: "User",
-    status: "Pending",
-    lastLogin: "Never",
-    avatar: "AB"
-  }
-];
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  status: string;
+  lastLogin: string;
+  avatar: string;
+}
 
 export default function Users() {
-  const [users, setUsers] = useState(initialUsers);
+  const [users, setUsers] = useState<User[]>([]);
   const [selectedUsers, setSelectedUsers] = useState<number[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
+  // Fetch users
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await axios.get("http://localhost:3000/api/auth/users");
+        const formatted: User[] = res.data.map((u) => ({
+          id: u.id,
+          name: u.username,
+          email: u.email,
+          role: u.role,
+          status: "Active", // tạm default
+          lastLogin: u.created_at
+            ? new Date(u.created_at).toISOString().split("T")[0]
+            : "Never",
+          avatar: u.username
+            ? u.username
+                .split(" ")
+                .map((w: string) => w[0].toUpperCase())
+                .join("")
+            : "U",
+        }));
+        setUsers(formatted);
+      } catch (err) {
+        console.error("Error fetching users:", err);
+      }
+    };
+    fetchUsers();
+  }, []);
+
   const filteredUsers = users.filter(
-    user =>
+    (user) =>
       user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -86,32 +77,65 @@ export default function Users() {
     if (selectedUsers.length === filteredUsers.length) {
       setSelectedUsers([]);
     } else {
-      setSelectedUsers(filteredUsers.map(user => user.id));
+      setSelectedUsers(filteredUsers.map((user) => user.id));
     }
   };
 
   const handleSelectUser = (userId: number) => {
-    setSelectedUsers(prev =>
+    setSelectedUsers((prev) =>
       prev.includes(userId)
-        ? prev.filter(id => id !== userId)
+        ? prev.filter((id) => id !== userId)
         : [...prev, userId]
     );
   };
-
-  const handleDeleteSelected = () => {
-    setUsers(prev => prev.filter(user => !selectedUsers.includes(user.id)));
+// Delete nhiều users
+const handleDeleteSelected = async () => {
+  try {
+    await Promise.all(
+      selectedUsers.map((id) =>
+        axios.delete(`http://localhost:3000/api/auth/users/${id}`)
+      )
+    );
+    setUsers((prev) => prev.filter((u) => !selectedUsers.includes(u.id)));
     setSelectedUsers([]);
     toast({
       title: "Users deleted",
       description: `Successfully deleted ${selectedUsers.length} user(s).`,
     });
-  };
+  } catch (err) {
+    console.error("Error deleting users:", err.response?.data || err.message);
+    toast({
+      title: "Error",
+      description: "Failed to delete selected users.",
+      variant: "destructive",
+    });
+  }
+};
+
+// Delete 1 user
+const handleDeleteUser = async (id: number) => {
+  try {
+    await axios.delete(`http://localhost:3000/api/auth/users/${id}`);
+    setUsers((prev) => prev.filter((u) => u.id !== id));
+    toast({
+      title: "User deleted",
+      description: "User has been deleted successfully.",
+    });
+  } catch (err) {
+    console.error("Error deleting user:", err.response?.data || err.message);
+    toast({
+      title: "Error",
+      description: "Failed to delete user.",
+      variant: "destructive",
+    });
+  }
+};
 
   const getStatusBadge = (status: string) => {
     const variants = {
       Active: "bg-success/10 text-success border-success/20",
       Inactive: "bg-muted text-muted-foreground border-border",
-      Pending: "bg-warning/10 text-warning border-warning/20"
+      Pending: "bg-warning/10 text-warning border-warning/20",
     };
     return variants[status as keyof typeof variants] || variants.Inactive;
   };
@@ -170,7 +194,10 @@ export default function Users() {
                 <TableRow className="bg-muted/30">
                   <TableHead className="w-12">
                     <Checkbox
-                      checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                      checked={
+                        selectedUsers.length === filteredUsers.length &&
+                        filteredUsers.length > 0
+                      }
                       onCheckedChange={handleSelectAll}
                     />
                   </TableHead>
@@ -205,7 +232,10 @@ export default function Users() {
                       <span className="font-medium text-foreground">{user.role}</span>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={getStatusBadge(user.status)}>
+                      <Badge
+                        variant="outline"
+                        className={getStatusBadge(user.status)}
+                      >
                         {user.status}
                       </Badge>
                     </TableCell>
@@ -222,7 +252,10 @@ export default function Users() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem>Edit User</DropdownMenuItem>
                           <DropdownMenuItem>Reset Password</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={() => handleDeleteUser(user.id)}
+                          >
                             Delete User
                           </DropdownMenuItem>
                         </DropdownMenuContent>
